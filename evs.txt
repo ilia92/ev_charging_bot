@@ -1,1 +1,0 @@
-EV_name		sonoff_IP	full_bat[KWh]	charge[watts]

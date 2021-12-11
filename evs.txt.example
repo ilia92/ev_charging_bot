@@ -1,0 +1,2 @@
+#EV_name	sonoff_IP	full_bat[Wh]	charge[watts]	blocks
+miev		192.168.1.100	13000		2000		16

@@ -1,4 +1,6 @@
-api_key_file="$DIR/.api_key"
 log_file="$DIR/charge.log"
+
 chat_id=""
+api_key=""
+
 curl_timeout=3
