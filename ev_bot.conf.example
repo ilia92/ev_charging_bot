@@ -1,6 +1,14 @@
-log_file="$DIR/charge.log"
-
+# Credentials for authenticating agains Telegram
+# See README for more info
 chat_id=""
 api_key=""
 
+# curl_timeout is the timeout, when curl queries are made
 curl_timeout=3
+# default_duration is default charge duration - if no value is set
+default_duration=28800
+
+# Off-peak tariff hours. Use the format as per the example
+night_from_to=22-6
+# To prolong the battery life and keep it heated before going to work, it can be charged in the last hours
+work_from_to=22-7
