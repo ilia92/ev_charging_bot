@@ -93,6 +93,7 @@ Valid inputs for /start:
 /status - shows the current power status
 /checkclock - check sonoff time
 /updateclock - update sonoff time
+/custom1 - running custom script (/custom2 amd /custom3 also available)
 "
 
 date -Is
@@ -135,6 +136,9 @@ case "$command" in
 	("/checkclock") result=`curl --silent http://$ev_ip/cm?cmnd=Time%201 | jq -r .[]`;;
         ("/updateclock") pc_date=`date +"%:z"` result=`curl --silent http://$ev_ip/cm?cmnd=timezone%20$pc_date`;;
         ("/setzero") result=`printf "Total: $(curl --silent http://$ev_ip/cm?cmnd=EnergyTotal | jq .EnergyTotal.Total)\n" ; curl --silent http://$ev_ip/cm?cmnd=EnergyTotal%200` ;;
+        ("/custom1") result=`$DIR/custom_scripts/custom1.sh` ;;
+        ("/custom2") result=`$DIR/custom_scripts/custom2.sh` ;;
+        ("/custom3") result=`$DIR/custom_scripts/custom3.sh` ;;
 	(*) result="Unknown command!" ;;
 esac
 
