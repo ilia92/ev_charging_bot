@@ -13,7 +13,7 @@ exec screen -L -Logfile $DIR/log/$(date -I)_ev_bot.log -dm -S ev_secretary_bot /
 fi
 
 sendtext() {
-curl -X POST https://api.telegram.org/bot$api_key/sendMessage -d chat_id=$chat_id -d text="$1" >/dev/null 2>&1 ;
+timeout $curl_timeout curl -X POST https://api.telegram.org/bot$api_key/sendMessage -d chat_id=$chat_id -d text="$1" >/dev/null 2>&1 ;
 }
 
 evgrep() {
@@ -54,8 +54,8 @@ printf "\nDuration (in seconds): $duration_seconds\n"
 }
 
 status() {
-power=`curl --silent http://$ev_ip/cm?cmnd=Power%20 | jq -r .POWER`
-energy_full_info=`curl --silent http://$ev_ip/cm?cmnd=Status%208 | jq .StatusSNS.ENERGY`
+power=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Power%20 | jq -r .POWER`
+energy_full_info=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Status%208 | jq .StatusSNS.ENERGY`
 today_power=`printf "$energy_full_info" | jq .Today`
 yesterday_power=`printf "$energy_full_info" | jq .Yesterday`
 total_power=`printf "$energy_full_info" | jq .Total`
@@ -64,10 +64,10 @@ current_power=`printf "$energy_full_info" | jq .Power`
 printf "Power is: $power\n"
 
 if [[ "$power" == "ON" ]] || [[ "$power" == "OFF" ]]; then
-timer1=`curl --silent http://$ev_ip/cm?cmnd=Timer1 | jq '.Timer1 | select(.Enable == 1) | select(.Action == 1)' | jq -r .Time`
-timer2=`curl --silent http://$ev_ip/cm?cmnd=Timer2 | jq '.Timer2 | select(.Enable == 1) | select(.Action == 1)' | jq -r .Time`
-timer3=`curl --silent http://$ev_ip/cm?cmnd=Timer3 | jq '.Timer3 | select(.Enable == 1) | select(.Action == 0)' | jq -r .Time`
-timer4=`curl --silent http://$ev_ip/cm?cmnd=Timer4 | jq '.Timer4 | select(.Enable == 1) | select(.Action == 0)' | jq -r .Time`
+timer1=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Timer1 | jq '.Timer1 | select(.Enable == 1) | select(.Action == 1)' | jq -r .Time`
+timer2=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Timer2 | jq '.Timer2 | select(.Enable == 1) | select(.Action == 1)' | jq -r .Time`
+timer3=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Timer3 | jq '.Timer3 | select(.Enable == 1) | select(.Action == 0)' | jq -r .Time`
+timer4=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Timer4 | jq '.Timer4 | select(.Enable == 1) | select(.Action == 0)' | jq -r .Time`
 printf "Schedule time:\nStart: $timer1 $timer2\nStop: $timer3 $timer4\n"
 
 else
@@ -97,13 +97,13 @@ Valid inputs for /start:
 "
 
 date -Is
-curl --silent https://api.telegram.org/bot$api_key/getMe | jq
-username=`curl --silent https://api.telegram.org/bot$api_key/getMe | jq -M -r .result.username`
+timeout $curl_timeout curl --silent https://api.telegram.org/bot$api_key/getMe | jq
+username=`timeout $curl_timeout curl --silent https://api.telegram.org/bot$api_key/getMe | jq -M -r .result.username`
 
 while [ 1 ]
 do
 
-curr_message=`curl --silent -s "https://api.telegram.org/bot$api_key/getUpdates?timeout=600&offset=$update_id"`
+curr_message=`timeout $curl_timeout curl --silent -s "https://api.telegram.org/bot$api_key/getUpdates?timeout=600&offset=$update_id"`
 last_upd_id=`printf "$curr_message" |  jq '.result | .[] | .update_id' | tail -1`
 
 if [[ $update_id -le $last_upd_id ]]; then
@@ -130,12 +130,12 @@ case "$command" in
 	("/night") time_to_seconds $arg ; $DIR/night_start.sh $night_from_to $ev_ip $duration_seconds ; sleep 2 ; result=`status` ;;
         ("/forwork") time_to_seconds $arg ; $DIR/night_start.sh $work_from_to $ev_ip $duration_seconds ; sleep 2 ; result=`status`;;
         ("/allnight") $DIR/night_start.sh $night_from_to $ev_ip ; sleep 2 ; result=`status`;;
-        ("/stop") result=`curl --silent http://$ev_ip/cm?cmnd=Power%200` ;;
+        ("/stop") result=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Power%200` ;;
         ("/status") result=`status` ;;
-        ("/zerotoday") result=`curl --silent http://$ev_ip/cm?cmnd=EnergyToday%200` ;;
-	("/checkclock") result=`curl --silent http://$ev_ip/cm?cmnd=Time%201 | jq -r .[]`;;
-        ("/updateclock") pc_date=`date +"%:z"` result=`curl --silent http://$ev_ip/cm?cmnd=timezone%20$pc_date`;;
-        ("/setzero") result=`printf "Total: $(curl --silent http://$ev_ip/cm?cmnd=EnergyTotal | jq .EnergyTotal.Total)\n" ; curl --silent http://$ev_ip/cm?cmnd=EnergyTotal%200` ;;
+        ("/zerotoday") result=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyToday%200` ;;
+	("/checkclock") result=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Time%201 | jq -r .[]`;;
+        ("/updateclock") pc_date=`date +"%:z"` result=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=timezone%20$pc_date`;;
+        ("/setzero") result=`printf "Total: $(timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyTotal | jq .EnergyTotal.Total)\n" ; timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyTotal%200` ;;
         ("/custom1") result=`$DIR/custom_scripts/custom1.sh` ;;
         ("/custom2") result=`$DIR/custom_scripts/custom2.sh` ;;
         ("/custom3") result=`$DIR/custom_scripts/custom3.sh` ;;

@@ -4,7 +4,7 @@ chat_id=""
 api_key=""
 
 # curl_timeout is the timeout, when curl queries are made
-curl_timeout=3
+curl_timeout=5
 # default_duration is default charge duration - if no value is set
 default_duration=28800
 
