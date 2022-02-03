@@ -5,6 +5,8 @@ DIR="$(dirname "$(readlink -f "$0")")"
 source $DIR/ev_bot.conf
 refresh_rate=1
 evs_file_read=`cat $DIR/evs.txt | cut -f1 -d"#" | sed '/^\s*$/d'`
+export curl_timeout
+
 
 if [ -z "$STY" ]; then
 printf "Bot started in background\n"
