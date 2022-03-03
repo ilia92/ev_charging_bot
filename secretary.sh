@@ -79,6 +79,12 @@ fi
 printf "\nPower Status:\nCurrent Power: $current_power W\nToday Power: $today_power KWh\nYesterday Power: $yesterday_power KWh\nTotal Power: $total_power KWh\n"
 }
 
+setzero() {
+timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyTotal%200
+timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyToday%200
+timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyYesterday%200
+}
+
 help_section="
 /help - Prints this text
 /start - starts charging
@@ -134,10 +140,9 @@ case "$command" in
         ("/allnight") $DIR/night_start.sh $night_from_to $ev_ip ; sleep 2 ; result=`status`;;
         ("/stop") result=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Power%200` ;;
         ("/status") result=`status` ;;
-        ("/zerotoday") result=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyToday%200` ;;
 	("/checkclock") result=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Time%201 | jq -r .[]`;;
         ("/updateclock") pc_date=`date +"%:z"` result=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=timezone%20$pc_date`;;
-        ("/setzero") result=`printf "Total: $(timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyTotal | jq .EnergyTotal.Total)\n" ; timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyTotal%200` ;;
+        ("/setzero") result=`printf "Total: $(timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyTotal | jq .EnergyTotal.Total)\n" ; setzero ` ;;
         ("/custom1") result=`$DIR/custom_scripts/custom1.sh` ;;
         ("/custom2") result=`$DIR/custom_scripts/custom2.sh` ;;
         ("/custom3") result=`$DIR/custom_scripts/custom3.sh` ;;
