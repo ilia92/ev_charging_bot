@@ -19,12 +19,19 @@ timeout $curl_timeout curl -X POST https://api.telegram.org/bot$api_key/sendMess
 }
 
 evgrep() {
-ev_name=$1
-if ! [[ "$evname" ]]; then
+ev_name=
+printf "1: $1 2: $2\n"
+if ! [[ "$1" ]]; then
 ev_chosen=`printf "$evs_file_read" | head -1`
-else
+elif [[ "$2" ]]; then
+ev_name=$2
+ev_chosen=`printf "$evs_file_read" | grep "$ev_name"`
+elif printf "$evs_file_read" |  awk {'print $1'} | grep "$1"; then
+ev_name=$1
 ev_chosen=`printf "$evs_file_read" | grep "$ev_name"`
 fi
+
+printf "NAME: $ev_chosen \n"
 
 ev_name=`printf "$ev_chosen" | awk {'print $1'}`
 ev_ip=`printf "$ev_chosen" | awk {'print $2'}`
@@ -33,6 +40,7 @@ ev_charger_power=`printf "$ev_chosen" | awk {'print $4'}`
 ev_blocks=`printf "$ev_chosen" | awk {'print $5'}`
 time_per_block=$(($ev_full_power*60/$ev_blocks/$ev_charger_power))
 #printf "Time per block: $time_per_block\n"
+printf "IP: $ev_ip\n"
 }
 
 time_to_seconds() {
@@ -85,6 +93,16 @@ timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyToday%200
 timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=EnergyYesterday%200
 }
 
+clear() {
+jq_payload_end="{\"Enable\":0,\"Mode\":0,\"Time\":\"0\",\"Window\":0,\"Days\":\"1111111\",\"Repeat\":0,\"Output\":1,\"Action\":0}"
+jq_payload_end_encoded=`printf "%s" $jq_payload_end | jq -sRr @uri`
+timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Timer1%20$jq_payload_end_encoded
+timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Timer2%20$jq_payload_end_encoded
+timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Timer3%20$jq_payload_end_encoded
+timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Timer4%20$jq_payload_end_encoded
+}
+
+
 help_section="
 /help - Prints this text
 /start - starts charging
@@ -98,6 +116,7 @@ Valid inputs for /start:
 /forwork - same as night, but different start-end time: $work_from_to
 /allnight - charging hours: $night_from_to
 /stop - stops charging
+/clear - clears all timers
 /status - shows the current power status
 /checkclock - check sonoff time
 /updateclock - update sonoff time
@@ -128,7 +147,7 @@ fi
 command=`echo $curr_message_text | grep -o '\/.*' | awk {'print $1'} | sed "s|@$username||g"`
 arg=`echo $curr_message_text | awk {'print $2" "$3" "$4'}`
 
-evgrep
+evgrep $arg
 
 case "$command" in
 	("") ;;
@@ -139,6 +158,7 @@ case "$command" in
         ("/forwork") time_to_seconds $arg ; $DIR/night_start.sh $work_from_to $ev_ip $duration_seconds ; sleep 2 ; result=`status`;;
         ("/allnight") $DIR/night_start.sh $night_from_to $ev_ip ; sleep 2 ; result=`status`;;
         ("/stop") result=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Power%200` ;;
+        ("/clear") clear ; result=`status` ;;
         ("/status") result=`status` ;;
 	("/checkclock") result=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=Time%201 | jq -r .[]`;;
         ("/updateclock") pc_date=`date +"%:z"` result=`timeout $curl_timeout curl --silent http://$ev_ip/cm?cmnd=timezone%20$pc_date`;;
