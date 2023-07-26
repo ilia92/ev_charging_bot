@@ -20,6 +20,7 @@ timeout $curl_timeout curl -X POST https://api.telegram.org/bot$api_key/sendMess
 
 evgrep() {
 ev_name=
+ev_chosen=
 printf "1: $1 2: $2\n"
 if ! [[ "$1" ]]; then
 ev_chosen=`printf "$evs_file_read" | head -1`
@@ -29,6 +30,8 @@ ev_chosen=`printf "$evs_file_read" | grep "$ev_name"`
 elif printf "$evs_file_read" |  awk {'print $1'} | grep "$1"; then
 ev_name=$1
 ev_chosen=`printf "$evs_file_read" | grep "$ev_name"`
+else
+ev_chosen=`printf "$evs_file_read" | head -1`
 fi
 
 printf "NAME: $ev_chosen \n"
@@ -71,6 +74,7 @@ yesterday_power=`printf "$energy_full_info" | jq .Yesterday`
 total_power=`printf "$energy_full_info" | jq .Total`
 current_power=`printf "$energy_full_info" | jq .Power`
 
+printf "EV: $ev_name\n"
 printf "Power is: $power\n"
 
 if [[ "$power" == "ON" ]] || [[ "$power" == "OFF" ]]; then
